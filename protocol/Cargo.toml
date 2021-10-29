@@ -1,0 +1,12 @@
+[package]
+name = "protocol"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+crypto = { path = "../crypto" }
+bytes = "1.1.0"
+rand = "0.8.4"
+md5 = "0.7"

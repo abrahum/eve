@@ -1,0 +1,42 @@
+[package]
+name = "eve-core"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bytes = "1.1.0"
+rand = "0.8.4"
+chrono = "0.4.19"
+md5 = "0.7.0"
+hex = "0.4.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+quick-protobuf = "0.8.0"
+# p256 = { version = "0.9.0", features = ["ecdh"] }
+tokio = { version = "1.0", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = [
+    "std",
+    "fmt",
+    "env-filter",
+    "registry",
+] }
+tracing-appender = "0.2"
+colored = "2.0"
+reqwest = "0.11"
+toml = "0.5"
+async-trait = "0.1"
+async-recursion = "0.3"
+flate2 = "1.0.22"
+futures-util = { version = "0.3", features = ["sink"] }
+
+jce_struct = { path = "jce_struct" }
+crypto = { path = "crypto" }
+protocol = { path = "protocol" }
+protobuf = { path = "protobuf" }
+
+[workspace]
+
+members = ["jce_struct", "jce_derive", "crypto", "protocol", "protobuf"]
