@@ -16,6 +16,7 @@ impl TlvWriteE for BytesMut {
     fn t511(&mut self, domains: Vec<&'static str>) {
         self.tlv_bytes(0x511, {
             let mut bytes_mut = BytesMut::with_capacity(1024);
+            bytes_mut.put_u16(domains.len() as u16);
             for domain in domains {
                 bytes_mut.put_u8(0x01);
                 bytes_mut.str_lv(domain);

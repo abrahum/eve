@@ -9,7 +9,7 @@ impl crate::Client {
         let mut bytes_mut = BytesMut::with_capacity(10240); // todo ckeck size
         bytes_mut.put_u16(9);
         // todo allowslider
-        bytes_mut.put_u16(if self.allow_slide { 17 } else { 16 });
+        bytes_mut.put_u16(if self.allow_slide { 0x17 } else { 0x16 });
         bytes_mut.t18(16, uin);
         bytes_mut.t1(uin, device_info.ip_address);
         bytes_mut.t106(
@@ -87,14 +87,10 @@ impl crate::Client {
             b.t536(Bytes::copy_from_slice(&[0x01, 0x00][..]));
             b.freeze()
         });
+        let b = bytes_mut.freeze();
+        println!("b:{:x}", b);
 
-        let datapkt = protocol::build_oicq_request_pkt(
-            uin,
-            0x0810,
-            &self.ecdh,
-            &self.rand_key,
-            bytes_mut.freeze(),
-        );
+        let datapkt = protocol::build_oicq_request_pkt(uin, 0x0810, &self.ecdh, &self.rand_key, b);
         let sso = protocol::build_sso_pkt(
             seq,
             self.version_info.app_id,
@@ -110,4 +106,26 @@ impl crate::Client {
 
         super::OutComePacket { bytes: pkt, seq }
     }
+}
+
+#[tokio::test]
+async fn test() {
+    use crate::{Client, Config, DeviceInfo, Password};
+    let config = Config::load_or_new();
+    let (mut cli, _) = Client::new(
+        config.clients[0].uid,
+        Password::from_str(&config.clients[0].password),
+        false,
+        DeviceInfo::load_or_new(),
+    )
+    .await;
+    cli.allow_slide = true;
+    let pkt = cli.build_login_pkt().await;
+}
+
+#[test]
+fn just_teso() {
+    let data = crate::DeviceInfo::default();
+    let b = data.gen_protobuf();
+    println!("{:x}-{}", b, b.len())
 }

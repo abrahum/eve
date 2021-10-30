@@ -47,7 +47,7 @@ impl TlvWriteA for BytesMut {
             bytes_mut.put_u16(1);
             bytes_mut.put_u32(rng.gen::<u32>());
             bytes_mut.put_u32(uin);
-            bytes_mut.put_u32(timestamp());
+            bytes_mut.put_u32(timestamp()); //todo unpass
             bytes_mut.extend(ip.octets());
             bytes_mut.put_u16(0);
         };

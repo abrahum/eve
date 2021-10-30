@@ -55,7 +55,17 @@ impl ECDH {
         e
     }
 
+    pub fn gen2(&mut self, s_pub_key: &str) {
+        let key = EphemeralSecret::random(rand::thread_rng());
+
+        let s_pub_key = hex::decode(s_pub_key).unwrap();
+        let pub_key = PublicKey::from_sec1_bytes(&s_pub_key).unwrap();
+
+        let share = key.diffie_hellman(&pub_key);
+    }
+
     pub fn generate_key(&mut self, s_pub_key: &str) {
+        // error
         let s_pub_key = hex::decode(s_pub_key).unwrap(); // decode pub key
         let secret = EphemeralSecret::random(rand::thread_rng()); // gen private key
         let pub_key = PublicKey::from_sec1_bytes(&s_pub_key).unwrap(); // gen public key

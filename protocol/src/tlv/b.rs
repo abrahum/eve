@@ -170,7 +170,8 @@ impl TlvWriteB for BytesMut {
             0x107,
             Box::new(move |bytes_mut| {
                 bytes_mut.put_u16(pic_type);
-                bytes_mut.put_bytes(0x00, 4);
+                bytes_mut.put_bytes(0x00, 3);
+                bytes_mut.put_u8(0x01);
             }),
             6,
         )
@@ -185,13 +186,13 @@ impl TlvWriteB for BytesMut {
     }
 
     fn t109(&mut self, android_id: &str) {
-        let h = md5::compute(android_id).0;
+        let h = Bytes::copy_from_slice(&md5::compute(android_id).0);
         self.tlv(
             0x109,
             Box::new(move |bytes_mut: &mut BytesMut| {
-                bytes_mut.bytes_lv(Bytes::copy_from_slice(&h[..]));
+                bytes_mut.extend(h);
             }),
-            18,
+            16,
         )
     }
 
@@ -312,7 +313,7 @@ impl TlvWriteB for BytesMut {
             );
             bytes_mut_.t16e(build_model);
 
-            bytes_mut.bytes_lv(tea.encrypt(bytes_mut_.freeze()));
+            bytes_mut.extend(tea.encrypt(bytes_mut_.freeze()));
             bytes_mut.freeze()
         })
     }
@@ -360,17 +361,17 @@ impl TlvWriteB for BytesMut {
         let h = Bytes::copy_from_slice(&md5::compute(mac_address).0);
         self.tlv(
             0x187,
-            Box::new(move |bytes_mut: &mut BytesMut| bytes_mut.bytes_lv(h)),
-            18,
+            Box::new(move |bytes_mut: &mut BytesMut| bytes_mut.extend(h)),
+            16,
         );
     }
 
     fn t188(&mut self, android_id: &str) {
         let h = Bytes::copy_from_slice(&md5::compute(android_id).0);
         self.tlv(
-            0x187,
-            Box::new(move |bytes_mut: &mut BytesMut| bytes_mut.bytes_lv(h)),
-            18,
+            0x188,
+            Box::new(move |bytes_mut: &mut BytesMut| bytes_mut.extend(h)),
+            16,
         );
     }
 
@@ -381,9 +382,9 @@ impl TlvWriteB for BytesMut {
     fn t194(&mut self, imsi_md5: &[u8]) {
         let value = Bytes::copy_from_slice(imsi_md5);
         self.tlv(
-            0x188,
-            Box::new(move |bytes_mut: &mut BytesMut| bytes_mut.bytes_lv(value)),
-            18,
+            0x194,
+            Box::new(move |bytes_mut: &mut BytesMut| bytes_mut.extend(value)),
+            16,
         );
     }
 }

@@ -141,9 +141,14 @@ fn test_guid_flag() {
     println!("{}", guid_flag())
 }
 
-fn timestamp() -> u32 {
+pub fn timestamp() -> u32 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
-        .as_secs() as u32
+        .as_millis() as u32
+}
+
+#[test]
+fn test_time() {
+    println!("{}", timestamp())
 }

@@ -38,8 +38,7 @@ pub struct DeviceInfo {
     pub version:        Version,
 
     /// [u8; 16]
-    #[serde(skip)]
-    pub imsi_md5:  Bytes,
+    pub imsi_md5:  [u8; 16],
     /// [u8; 16]
     #[serde(skip)]
     pub guid:      Bytes,
@@ -92,7 +91,7 @@ impl Default for DeviceInfo {
                 sdk:         29,
             },
 
-            imsi_md5:  Bytes::default(),
+            imsi_md5:  [0u8; 16],
             guid:      Bytes::default(),
             tgtgt_key: Bytes::default(),
         }
@@ -113,14 +112,12 @@ impl DeviceInfo {
             "Linux version 3.0.31-{} (android-build@xxx.xxx.xxx.xxx.com)",
             super::gen_rand_string(8)
         );
-        device_info.imsi_md5 = Bytes::copy_from_slice(
-            &md5::compute({
-                let mut rand_array = [0u8; 16];
-                rand::thread_rng().fill_bytes(&mut rand_array);
-                rand_array
-            })
-            .0,
-        );
+        device_info.imsi_md5 = md5::compute({
+            let mut rand_array = [0u8; 16];
+            rand::thread_rng().fill_bytes(&mut rand_array);
+            rand_array
+        })
+        .0;
         device_info.imei = new_imei();
         device_info.android_id = hex::encode({
             let mut rand_array = [0u8; 8];
