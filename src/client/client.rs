@@ -1,13 +1,13 @@
 use std::{
     collections::HashMap,
-    convert::TryInto,
+    // convert::TryInto,
     net::{IpAddr, SocketAddr},
     str::FromStr,
     sync::atomic::{AtomicBool, AtomicI64, AtomicU16, AtomicUsize},
 };
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
-use jce_struct::*;
+use jcers::JcePut;
 use tokio::sync::{mpsc::UnboundedReceiver, RwLock};
 use tracing::{info, trace};
 
@@ -63,21 +63,35 @@ impl super::Client {
         let protocol_info = VersionInfo::new(&self.device_info.protocol);
         let key = hex::decode("F0441F5FF42DA58FDCF7949ABA62D411").unwrap();
         let payload = {
-            let mut jce = jce_struct::JceMut::with_capacity(1024);
-            jce.put_i64(0, 1)
-                .put_i64(0, 2)
-                .put_i64(1, 3)
-                .put_string("00000".to_owned(), 4)
-                .put_i32(100, 5)
-                .put_i32(protocol_info.app_id.try_into().unwrap(), 6)
-                .put_string(self.device_info.imei.clone(), 7)
-                .put_i64(0, 8)
-                .put_i64(0, 9)
-                .put_i64(0, 10)
-                .put_i64(0, 11)
-                .put_i64(0, 12)
-                .put_i64(0, 13)
-                .put_i64(1, 14);
+            let mut jce = jcers::JceMut::with_capacity(1024);
+            0i64.jce_put(&mut jce, 1);
+            0i64.jce_put(&mut jce, 2);
+            1i64.jce_put(&mut jce, 3);
+            "00000".to_owned().jce_put(&mut jce, 4);
+            100i32.jce_put(&mut jce, 5);
+            (protocol_info.app_id as i32).jce_put(&mut jce, 6);
+            self.device_info.imei.clone().jce_put(&mut jce, 7);
+            0i64.jce_put(&mut jce, 8);
+            0i64.jce_put(&mut jce, 9);
+            0i64.jce_put(&mut jce, 10);
+            0i64.jce_put(&mut jce, 11);
+            0i64.jce_put(&mut jce, 12);
+            0i64.jce_put(&mut jce, 12);
+            1i64.jce_put(&mut jce, 14);
+            // jce.put_i64(0, 1)
+            //     .put_i64(0, 2)
+            //     .put_i64(1, 3)
+            //     .put_string("00000".to_owned(), 4)
+            //     .put_i32(100, 5)
+            //     .put_i32(protocol_info.app_id.try_into().unwrap(), 6)
+            //     .put_string(self.device_info.imei.clone(), 7)
+            //     .put_i64(0, 8)
+            //     .put_i64(0, 9)
+            //     .put_i64(0, 10)
+            //     .put_i64(0, 11)
+            //     .put_i64(0, 12)
+            //     .put_i64(0, 13)
+            //     .put_i64(1, 14);
             jce.freeze()
         };
         let mut map = HashMap::new();
@@ -90,7 +104,7 @@ impl super::Client {
             i_version:      3,
             s_servant_name: "ConfigHttp".to_owned(),
             s_func_name:    "HttpServerListReq".to_owned(),
-            s_buffer:       buf.build(),
+            s_buffer:       buf.jce_freeze(),
             c_packet_type:  0,
             i_message_type: 0,
             i_request_id:   0,
@@ -104,7 +118,7 @@ impl super::Client {
         let rsp = super::utils::http_post(
             "https://configsvr.msf.3g.qq.com/configsvr/serverlist.jsp",
             tea.encrypt({
-                let data = pkt.build();
+                let data = pkt.jce_freeze();
                 let intlv: u32 = data.len() as u32 + 0;
                 let mut bytes = BytesMut::with_capacity(data.len() + 4);
                 bytes.put_u32(intlv);
@@ -118,17 +132,18 @@ impl super::Client {
 
         let mut de_rsp = tea.decrypt(rsp).unwrap();
         let _ = de_rsp.split_to(4);
-        let mut request_packet: RequestPacket = Jce::read_from_bytes(&mut de_rsp);
+        let mut request_packet: RequestPacket = jcers::from_buf(&mut de_rsp).unwrap();
 
         let mut request_data_version3: RequestDataVersion3 =
-            Jce::read_from_bytes(&mut request_packet.s_buffer);
+            jcers::from_buf(&mut request_packet.s_buffer).unwrap();
 
-        let sso_server_infos: HttpServerListRes = Jce::read_from_bytes(
+        let sso_server_infos: HttpServerListRes = jcers::from_buf(
             request_data_version3
                 .map
                 .get_mut("HttpServerListRes")
                 .unwrap(),
-        );
+        )
+        .unwrap();
         let mut servers = vec![];
         for s in sso_server_infos.sso_server_infos {
             match std::net::Ipv4Addr::from_str(&s.server) {

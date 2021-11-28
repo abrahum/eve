@@ -1,10 +1,14 @@
 [package]
-name = "jce_struct"
+name = "jcers_proc"
 version = "0.1.0"
 edition = "2018"
+
+[lib]
+proc-macro = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bytes = "1.1.0"
-jce_derive = { path = "../jce_derive" }
+quote = "1"
+syn = "1"
+proc-macro2 = "1"

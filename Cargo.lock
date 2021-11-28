@@ -417,7 +417,7 @@ dependencies = [
  "flate2",
  "futures-util",
  "hex",
- "jce_struct",
+ "jcers",
  "md5",
  "protobuf",
  "protocol",
@@ -755,20 +755,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b71991ff56294aa922b450139ee08b3bfc70982c6b2c7562771375cf73542dd4"
 
 [[package]]
-name = "jce_derive"
+name = "jcers"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "hex",
+ "jcers_proc",
+]
+
+[[package]]
+name = "jcers_proc"
 version = "0.1.0"
 dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "jce_struct"
-version = "0.1.0"
-dependencies = [
- "bytes",
- "jce_derive",
 ]
 
 [[package]]

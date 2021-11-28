@@ -32,11 +32,11 @@ async-recursion = "0.3"
 flate2 = "1.0.22"
 futures-util = { version = "0.3", features = ["sink"] }
 
-jce_struct = { path = "jce_struct" }
+jcers = { path = "jcers", features = ["derive"] }
 crypto = { path = "crypto" }
 protocol = { path = "protocol" }
 protobuf = { path = "protobuf" }
 
 [workspace]
 
-members = ["jce_struct", "jce_derive", "crypto", "protocol", "protobuf"]
+members = ["jcers", "jcers_proc", "crypto", "protocol", "protobuf"]
