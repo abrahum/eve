@@ -66,36 +66,45 @@ fn parse_attrs(attrs: &Vec<Attribute>, field: &Field) -> Result<u8, Vec<syn::Err
 }
 
 fn gen_get_body(struct_name: Ident, fields: Fields) -> Result<TokenStream2, Vec<syn::Error>> {
-    let mut ts = TokenStream2::default();
+    // let mut ts = TokenStream2::default();
+    let mut idents_vec = vec![];
+    let mut tys_vec = vec![];
+    let mut tags_vec = vec![];
     for field in fields.iter() {
-        let tag = parse_attrs(&field.attrs, &field)?;
-        let ident = field.ident.as_ref().unwrap();
-        let ty = &field.ty;
-        ts = quote! {
-            #ts
-            #ident: sub_jce.get_by_tag::<#ty>(#tag)?,
-        }
+        tags_vec.push(parse_attrs(&field.attrs, &field)?);
+        idents_vec.push(field.ident.as_ref().unwrap());
+        tys_vec.push(&field.ty);
+        // fields_vec.push((field.ident.as_ref().unwrap(), &field.ty, tag));
+        // let ident = field.ident.as_ref().unwrap();
+        // let ty = &field.ty;
     }
-    ts = quote! {
+    Ok(quote! {
         impl jcers::JceGet for #struct_name {
-            fn jce_get<B: bytes::Buf + ?Sized>(jce: &mut jcers::Jce<B>) -> jcers::JceResult<Self> {
-                if jce.head.ty != jcers::JceType::Struct {
-                    return Err(jcers::JceError::ReadTypeError(jcers::JceType::Struct, jce.head.ty));
-                }
-                let mut sub_jce = jce.sub_jce();
-                let r = #struct_name {
-                    #ts
-                };
-                jce.end_struct()?;
-                Ok(r)
+            fn jce_get<B: bytes::Buf + ?Sized + std::fmt::LowerHex>(jce: &mut jcers::Jce<B>) -> jcers::JceResult<Self> {
+                let sub = jce.head.ty == jcers::JceType::Struct;
+                Ok(if sub {
+                    let mut sub_jce = jce.sub_jce();
+                    let r = #struct_name {
+                        #(
+                            #idents_vec: sub_jce.get_by_tag::<#tys_vec>(#tags_vec)?
+                        ),*
+                    };
+                    jce.end_struct()?;
+                    r
+                } else {
+                    #struct_name {
+                        #(
+                            #idents_vec: jce.get_by_tag::<#tys_vec>(#tags_vec)?
+                        ),*
+                    }
+                })
             }
 
             fn empty() -> jcers::JceResult<Self> {
                 Ok(#struct_name::default())
             }
         }
-    };
-    Ok(ts)
+    })
 }
 
 fn gen_put_body(struct_name: Ident, fields: Fields) -> Result<TokenStream2, Vec<syn::Error>> {

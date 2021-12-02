@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use std::hash::Hash;
+use std::{collections::HashMap, fmt::LowerHex};
 
 use super::{JceError, JceHead, JceResult, JceType, JceValue};
 use bytes::{Buf, Bytes};
@@ -11,17 +11,18 @@ where
 {
     inner:    &'a mut B,
     pub head: JceHead,
+    readed:   bool,
 }
 
 /// Deserialize Jce Value
 pub trait JceGet: Sized {
-    fn jce_get<B: Buf + ?Sized>(jce: &mut Jce<B>) -> JceResult<Self>;
+    fn jce_get<B: Buf + ?Sized + LowerHex>(jce: &mut Jce<B>) -> JceResult<Self>;
     fn empty() -> JceResult<Self>;
-    fn get_from_buf<B: Buf>(buf: &mut B) -> JceResult<Self> {
+    fn get_from_buf<B: Buf + LowerHex>(buf: &mut B) -> JceResult<Self> {
         let mut jce = Jce::new(buf);
         Self::jce_get(&mut jce)
     }
-    fn get_by_tag<B>(jce: &mut Jce<B>, tag: u8) -> JceResult<Self>
+    fn get_by_tag<B: LowerHex>(jce: &mut Jce<B>, tag: u8) -> JceResult<Self>
     where
         B: Buf,
     {
@@ -31,12 +32,13 @@ pub trait JceGet: Sized {
 
 impl<'a, B> Jce<'a, B>
 where
-    B: Buf + ?Sized,
+    B: Buf + ?Sized + LowerHex,
 {
     pub fn new(inner: &'a mut B) -> Self {
         let mut jce = Jce {
             inner,
             head: JceHead::default(),
+            readed: false,
         };
         jce.read_head();
         jce
@@ -60,14 +62,22 @@ where
         }
         let head = JceHead { ty, tag };
         self.head = head;
+        self.readed = false;
         head
     }
 
     pub fn pass_a_tag(&mut self) -> JceResult<()> {
-        JceValue::jce_get(self).map(|_| ())
+        if self.head.ty != JceType::StructEnd {
+            JceValue::jce_get(self).map(|_| ())
+        } else {
+            Ok(())
+        }
     }
 
     pub fn go_to_tag(&mut self, tag: u8) -> JceResult<()> {
+        if !self.readed {
+            self.pass_a_tag()?;
+        }
         while self.read_head().tag != tag {
             self.pass_a_tag()?;
             if !self.inner.has_remaining() {
@@ -84,6 +94,7 @@ where
         if self.head.tag != tag {
             self.go_to_tag(tag)?;
         }
+        self.readed = true;
         T::jce_get(self)
     }
 
@@ -124,7 +135,7 @@ impl JceGet for u8 {
 }
 
 impl JceGet for i16 {
-    fn jce_get<B: Buf + ?Sized>(jce: &mut Jce<B>) -> JceResult<Self> {
+    fn jce_get<B: Buf + ?Sized + LowerHex>(jce: &mut Jce<B>) -> JceResult<Self> {
         match jce.head.ty {
             JceType::Byte => u8::jce_get(jce).map(|i| i as i16),
             JceType::I16 => Ok(jce.inner.get_i16()),
@@ -139,7 +150,7 @@ impl JceGet for i16 {
 }
 
 impl JceGet for i32 {
-    fn jce_get<B: Buf + ?Sized>(jce: &mut Jce<B>) -> JceResult<Self> {
+    fn jce_get<B: Buf + ?Sized + LowerHex>(jce: &mut Jce<B>) -> JceResult<Self> {
         match jce.head.ty {
             JceType::Byte => u8::jce_get(jce).map(|i| i as i32),
             JceType::I16 => i16::jce_get(jce).map(|i| i as i32),
@@ -155,7 +166,7 @@ impl JceGet for i32 {
 }
 
 impl JceGet for i64 {
-    fn jce_get<B: Buf + ?Sized>(jce: &mut Jce<B>) -> JceResult<Self> {
+    fn jce_get<B: Buf + ?Sized + LowerHex>(jce: &mut Jce<B>) -> JceResult<Self> {
         match jce.head.ty {
             JceType::Byte => u8::jce_get(jce).map(|i| i as i64),
             JceType::I16 => i16::jce_get(jce).map(|i| i as i64),
@@ -226,7 +237,7 @@ where
     K: JceGet + Eq + Hash,
     V: JceGet,
 {
-    fn jce_get<B: Buf + ?Sized>(jce: &mut Jce<B>) -> JceResult<Self> {
+    fn jce_get<B: Buf + ?Sized + LowerHex>(jce: &mut Jce<B>) -> JceResult<Self> {
         if jce.head.ty != JceType::Map {
             return Err(JceError::ReadTypeError(JceType::Map, jce.head.ty));
         }
@@ -251,7 +262,7 @@ impl<V> JceGet for Vec<V>
 where
     V: JceGet,
 {
-    fn jce_get<B: Buf + ?Sized>(jce: &mut Jce<B>) -> JceResult<Self> {
+    fn jce_get<B: Buf + ?Sized + LowerHex>(jce: &mut Jce<B>) -> JceResult<Self> {
         if jce.head.ty != JceType::List {
             return Err(JceError::ReadTypeError(JceType::List, jce.head.ty));
         }
@@ -272,8 +283,9 @@ where
 }
 
 impl JceGet for Bytes {
-    fn jce_get<B: Buf + ?Sized>(jce: &mut Jce<B>) -> JceResult<Self> {
+    fn jce_get<B: Buf + ?Sized + LowerHex>(jce: &mut Jce<B>) -> JceResult<Self> {
         jce.inner.get_u8();
+        let mut jce = jce.sub_jce();
         let len = jce.get_by_tag::<i32>(0)? as usize;
         Ok(jce.inner.copy_to_bytes(len))
     }

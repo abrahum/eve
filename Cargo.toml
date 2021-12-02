@@ -32,7 +32,7 @@ async-recursion = "0.3"
 flate2 = "1.0.22"
 futures-util = { version = "0.3", features = ["sink"] }
 
-jcers = { path = "jcers", features = ["derive"] }
+jcers = { path = "jcers" }
 crypto = { path = "crypto" }
 protocol = { path = "protocol" }
 protobuf = { path = "protobuf" }

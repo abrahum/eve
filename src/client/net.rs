@@ -85,7 +85,7 @@ impl ClientNet {
                 }
                 Ok(pkt)
             }
-            Err(e) => panic!("handle parase income packet err here {}", e),
+            Err(e) => panic!("handle parase income packet err here {:?}", e),
         }
     }
 

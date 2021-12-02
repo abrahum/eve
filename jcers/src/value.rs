@@ -1,5 +1,5 @@
 use super::JceType;
-use std::collections::{BTreeMap, HashMap};
+use std::{collections::{BTreeMap, HashMap}, fmt::LowerHex};
 
 use bytes::Bytes;
 
@@ -22,7 +22,7 @@ pub enum JceValue {
 }
 
 impl super::JceGet for JceValue {
-    fn jce_get<B: bytes::Buf + ?Sized>(jce: &mut crate::de::Jce<B>) -> crate::JceResult<Self> {
+    fn jce_get<B: bytes::Buf + ?Sized + LowerHex>(jce: &mut crate::de::Jce<B>) -> crate::JceResult<Self> {
         match jce.head.ty {
             JceType::Bool => Ok(Self::Bool(bool::jce_get(jce)?)),
             JceType::Byte => Ok(Self::Byte(u8::jce_get(jce)?)),
@@ -57,7 +57,7 @@ pub enum JceMapKey {
 }
 
 impl super::JceGet for JceMapKey {
-    fn jce_get<B: bytes::Buf + ?Sized>(jce: &mut crate::de::Jce<B>) -> crate::JceResult<Self> {
+    fn jce_get<B: bytes::Buf + ?Sized + LowerHex>(jce: &mut crate::de::Jce<B>) -> crate::JceResult<Self> {
         match jce.head.ty {
             JceType::Byte => Ok(Self::Byte(u8::jce_get(jce)?)),
             JceType::I16 => Ok(Self::I16(i16::jce_get(jce)?)),
@@ -77,7 +77,7 @@ impl super::JceGet for JceMapKey {
 pub type JceStruct = BTreeMap<u8, JceValue>;
 
 impl super::JceGet for JceStruct {
-    fn jce_get<B: bytes::Buf + ?Sized>(jce: &mut crate::de::Jce<B>) -> crate::JceResult<Self> {
+    fn jce_get<B: bytes::Buf + ?Sized + LowerHex>(jce: &mut crate::de::Jce<B>) -> crate::JceResult<Self> {
         let mut map = BTreeMap::new();
         while jce.has_remaining() {
             jce.read_head();

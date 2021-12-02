@@ -5,7 +5,7 @@ use std::{error::Error, fmt::Display};
 pub type JceResult<T> = Result<T, JceError>;
 
 /// Errors
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum JceError {
     /// Jce tag error
     ReadTagError(u8, u8),

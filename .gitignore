@@ -3,4 +3,5 @@
 logs
 device.json
 Eve.toml
+*.hex
 _*

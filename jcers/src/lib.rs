@@ -8,11 +8,13 @@ mod test;
 mod util;
 mod value;
 
+use std::fmt::LowerHex;
+
 use bytes::Buf;
 pub use de::{Jce, JceGet};
 pub use err::{JceError, JceResult};
-#[cfg(feature = "derive")]
-#[cfg_attr(docrs, doc(cfg(feature = "derive")))]
+// #[cfg(feature = "derive")]
+// #[cfg_attr(docrs, doc(cfg(feature = "derive")))]
 pub use jcers_proc::{JceGet, JcePut};
 pub use ser::{JceMut, JcePut};
 pub use util::{JceHead, JceType};
@@ -29,7 +31,7 @@ pub use value::*;
 /// ```
 pub fn from_buf<B, T>(buf: &mut B) -> JceResult<T>
 where
-    B: Buf,
+    B: Buf + LowerHex,
     T: JceGet,
 {
     let mut jce_mut = Jce::new(buf);

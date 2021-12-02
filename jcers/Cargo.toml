@@ -5,12 +5,17 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[features]
-derive = ["jcers_proc"]
+# [features]
+# derive = ["jcers_proc"]
+
+# [[example]]
+# name = "test"
+# path = "examples/test.rs"
 
 [dependencies]
 bytes = "1.1"
-jcers_proc = { path = "../jcers_proc", optional = true }
+jcers_proc = { path = "../jcers_proc" }
+hex = "*"
 
 [dev-dependencies]
 hex = "*"

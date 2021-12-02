@@ -1,13 +1,9 @@
+use crate::error::*;
 use bytes::{Buf, Bytes, BytesMut};
 use protocol::tlv::TlvRead;
 use std::io::prelude::*;
 
 pub(crate) mod login_resp;
-
-static UNKOWN_FLAG: &str = "Unkown flag";
-static INVALID: &str = "Invalid payload";
-static SESSION_EXPIRED: &str = "Session expired";
-static PACKET_DROPPED: &str = "Packet dropped";
 
 #[derive(Clone, Debug)]
 pub struct IncomePacket {
@@ -36,9 +32,9 @@ impl CommandName {
 }
 
 impl IncomePacket {
-    pub fn parase_income_packet(mut data: Bytes, d2key: Bytes) -> Result<Self, String> {
+    pub fn parase_income_packet(mut data: Bytes, d2key: Bytes) -> EveResult<Self> {
         if data.len() < 6 {
-            return Err(INVALID.to_owned());
+            return EveError::DecodeIncomeInvalid(data).err();
         }
 
         let flag1 = data.get_i32();
@@ -58,25 +54,25 @@ impl IncomePacket {
             _ => Bytes::default(),
         };
         if de.is_empty() {
-            return Err(UNKOWN_FLAG.to_owned());
+            return EveError::DecodeIncomeUnkownFlag(flag2 as i32).err();
         }
         if flag1 != 0x0a && flag1 != 0x0b {
-            return Err(UNKOWN_FLAG.to_owned());
+            return EveError::DecodeIncomeUnkownFlag(flag1).err();
         }
-        return Self::parse_sso_frame(de, flag2);
+        Self::parse_sso_frame(de, flag2)
     }
 
-    pub fn parse_sso_frame(mut data: Bytes, flag2: u8) -> Result<Self, String> {
+    pub fn parse_sso_frame(mut data: Bytes, flag2: u8) -> EveResult<Self> {
         if data.get_i32() - 4 > data.len() as i32 {
-            return Err(PACKET_DROPPED.to_owned());
+            return EveError::SsoPacketDropped.err();
         }
         let seq = data.get_i32();
         let ret_code = data.get_i32();
         if ret_code != 0 {
             if ret_code == -10008 {
-                return Err(SESSION_EXPIRED.to_owned());
+                return EveError::SsoSessionExpired.err();
             } else {
-                return Err(format!("Get unsuccess ret code {}", ret_code));
+                return EveError::SsoUnsuccessRetCode(ret_code).err();
             }
         }
         data.get_bytes(); // extra data
